@@ -3,6 +3,14 @@ name = "email_newsletter"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "email_newsletter"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "email_newsletter_server"
+path = "src/bin/server/main.rs"
+
 [dependencies]
 axum = "0.7.9"
 anyhow = "1.0.95"
