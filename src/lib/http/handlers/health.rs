@@ -1,7 +1,8 @@
+use crate::http::handlers::shared::{ApiError, ApiSuccess};
 use axum::http::StatusCode;
 
-pub async fn health_handler() -> (StatusCode, &'static str) {
-    (StatusCode::OK, "OK")
+pub async fn health_handler() -> Result<ApiSuccess<&'static str>, ApiError> {
+    Ok(ApiSuccess::new(StatusCode::OK, "OK"))
 }
 
 #[cfg(test)]
@@ -10,8 +11,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_health_handler() {
-        let (status, body) = health_handler().await;
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(body, "OK");
+        let response = health_handler().await;
+        assert!(response.is_ok());
     }
 }

@@ -5,6 +5,7 @@ use axum::Router;
 use tokio::net::TcpListener;
 
 mod handlers;
+mod responses;
 
 pub struct HttpServer {
     pub router: Router,
@@ -24,5 +25,34 @@ impl HttpServer {
             .context("received error from axum server")?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use reqwest::Client;
+
+    async fn spawn_app() {
+        let http_server = HttpServer::new()
+            .await
+            .expect("Failed to create http server.");
+
+        let _ = tokio::spawn(async move {
+            http_server.run().await.expect("Failed to run http server.");
+        });
+    }
+
+    #[tokio::test]
+    async fn health_check_works() {
+        spawn_app().await;
+
+        let client = Client::new();
+        let response = client
+            .get("http://localhost:8000/health")
+            .send()
+            .await
+            .expect("Failed to execute request.");
+        assert!(response.status().is_success());
     }
 }
