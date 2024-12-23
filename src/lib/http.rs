@@ -1,21 +1,31 @@
+use std::sync::Arc;
+
 use crate::http::handlers::{health::health_handler, subscriptions::subscriptions_handler};
 use anyhow::Context;
 use axum::routing::{get, post};
 use axum::Router;
+use sqlx::PgPool;
 use tokio::net::TcpListener;
 
 mod handlers;
 mod responses;
+
+#[derive(Debug, Clone)]
+pub struct AppState<PG> {
+    connection: Arc<PG>,
+}
 
 pub struct HttpServer {
     pub router: Router,
 }
 
 impl HttpServer {
-    pub async fn new() -> anyhow::Result<Self> {
+    pub async fn new(pool: PgPool) -> anyhow::Result<Self> {
         let router = Router::new()
             .route("/health", get(health_handler))
-            .route("/subscriptions", post(subscriptions_handler));
+            .route("/subscriptions", post(subscriptions_handler))
+            .with_state(pool);
+
         Ok(Self { router })
     }
 

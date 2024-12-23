@@ -1,7 +1,9 @@
 use crate::http::handlers::shared::{ApiError, ApiSuccess};
-use axum::http::StatusCode;
+use anyhow::anyhow;
 use axum::Form;
+use axum::{extract::State, http::StatusCode};
 use serde::Deserialize;
+use sqlx::PgPool;
 
 #[derive(Deserialize)]
 pub struct Subscribe {
@@ -10,8 +12,31 @@ pub struct Subscribe {
 }
 
 pub async fn subscriptions_handler(
-    Form(subscribe): Form<Subscribe>,
+    Form(form): Form<Subscribe>,
+    State(pool): State<PgPool>,
 ) -> Result<ApiSuccess<()>, ApiError> {
+    let mut tx = pool
+        .begin()
+        .await
+        .map_err(|e| {
+            anyhow!(e)
+                .context(format!("failed to save subscription"))
+                .into()
+        })
+        .unwrap();
+
+    let query = sqlx::query!(
+        r#"
+        INSERT INTO subscriptions (id, email, name, subscribed_at)
+        VALUES ($1, $2, $3, $4)
+        "#,
+        Uuid::new_v4(),
+        form.email,
+        form.name,
+        Utc::now()
+    );
+
+    tx.execute(query).await?;
     Ok(ApiSuccess::new(StatusCode::OK, ()))
 }
 
